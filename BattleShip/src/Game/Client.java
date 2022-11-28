@@ -38,7 +38,7 @@ public class Client implements ActionListener {
 			}
 		}
 		this.name = name;
-		t = new Timer(10, this);
+		t = new Timer(11, this);
 		p = new Timer(100, this);
 		try {
 			w = new Socket(this.ip,2245);
