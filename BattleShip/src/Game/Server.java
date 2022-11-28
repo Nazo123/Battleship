@@ -1,20 +1,24 @@
 package Game;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.Timer;
@@ -38,8 +42,14 @@ public class Server implements ActionListener {
 		l = new JLabel();
 		f.setVisible(true);
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.setTitle("Server");
+		try {
+			f.setTitle("Server - " + InetAddress.getLocalHost().getHostAddress() + " - 2245");
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(f, "Server could not be setup");
+			System.exit(0);
+		}
 		l.setText("<html>The current unqueued players are:<br> The current unqueued players are: <br> The current unqueued players are:");
+		l.setFont(font);
 		p.add(l);
 		f.add(p);
 		f.pack();
@@ -87,8 +97,6 @@ public class Server implements ActionListener {
 				try {
 					h.os.writeUTF("$");
 				} catch (IOException e1) {
-					e1.printStackTrace();
-					System.out.println("Failed ping :(");
 					toRemove.add(h);
 				}
 			}
@@ -102,9 +110,7 @@ public class Server implements ActionListener {
 			for(int i = 0; i < toRemove.size();i++) {
 				if(!waiting.remove(toRemove.get(i))) {
 					for(int j = 0; j < queue.keySet().size();j++) {
-						System.out.println("Trying to remove with key: "+((String) queue.keySet().toArray()[j]));
 						if(queue.get(((String) queue.keySet().toArray()[j]))==toRemove.get(i)){
-							System.out.println("Active remove");
 							queue.remove(((String) queue.keySet().toArray()[j]));
 							break;
 						}
@@ -161,10 +167,6 @@ public class Server implements ActionListener {
 				}
 			}
 		}
-		
-		System.out.println("Games: " + games);
-		System.out.println("Queue: " + queue);
-		System.out.println("Waiting: " + waiting);
 		String playerst = "<br>";
 		String queuet = "<br>";
 		String gamest = "<br>";
@@ -180,8 +182,7 @@ public class Server implements ActionListener {
 		}
 		
 		l.setText(makeLabel(playerst,queuet,gamest));
-		f.pack();
-		
+		f.pack();		
 	}
 	String makeLabel(String players, String queue, String games) {
 		return "<html>" + "The non-playing  players are: " + players+ "<br>"+"The games in queue are: " + queue+ "<br>"+ "The current active games are: "+games;			

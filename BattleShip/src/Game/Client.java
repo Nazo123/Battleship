@@ -21,19 +21,32 @@ public class Client implements ActionListener {
 	Timer t;
 	Timer p;
 	String name;
-	public Client(String name) {
+	String ip;
+	public Client(String name, String ip) {
+		if(ip=="") {
+			this.ip = ip;
+		} else {
+			try {
+				this.ip = InetAddress.getLocalHost().getHostAddress();
+			} catch (UnknownHostException e) {
+				JOptionPane.showMessageDialog(null, "Local IP could not be found");
+				System.exit(0);
+			}
+		}
 		this.name = name;
 		t = new Timer(10, this);
 		p = new Timer(100, this);
 		try {
-			w = new Socket(InetAddress.getLocalHost().getHostAddress(),2245);
+			w = new Socket(this.ip,2245);
 			is = new DataInputStream(w.getInputStream());
 			os = new DataOutputStream(w.getOutputStream());
 			os.writeUTF(name);
 		} catch (UnknownHostException e) {
 			quit();
 		} catch (IOException e) {
-			quit();
+			JOptionPane.showMessageDialog(null, "There is no server running at this IP. If non-local make sure this IP is valid/correct");
+			t.stop();
+			System.exit(0);
 		}
 		t.start();
 		p.start();
