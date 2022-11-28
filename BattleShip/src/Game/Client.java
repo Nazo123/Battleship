@@ -23,7 +23,11 @@ public class Client implements ActionListener {
 	String name;
 	String ip;
 	public Client(String name, String ip) {
-		if(ip=="") {
+		if(name.equals("") || name.equals(null)) {
+			JOptionPane.showMessageDialog(null, "Invalid username");
+			System.exit(0);
+		}
+		if(ip.equals("")) {
 			this.ip = ip;
 		} else {
 			try {
