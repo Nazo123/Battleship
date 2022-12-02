@@ -20,9 +20,9 @@ public class Runner {
 		}
 		Server s = new Server();
 		} else if(result == 1) {
-		Client s = new Client(JOptionPane.showInputDialog("What is your username?"),"");
+		Client s = new Client(""+JOptionPane.showInputDialog("What is your username?"),"");
 		} else if(result == 2) {
-			Client s = new Client(JOptionPane.showInputDialog("What is your username?"),JOptionPane.showInputDialog("What is the IP of the server you would like to join?"));
+			Client s = new Client(""+JOptionPane.showInputDialog("What is your username?"),JOptionPane.showInputDialog("What is the IP of the server you would like to join?"));
 		} else {
 			System.exit(0);
 		}

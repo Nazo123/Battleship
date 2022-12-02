@@ -1,5 +1,7 @@
 package Game;
 
+import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -9,19 +11,26 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class Client implements ActionListener {
+	ArrayList<BattleShip> ships = new ArrayList<BattleShip>();
 	boolean inQueue;
 	Socket w;
 	DataInputStream is;
 	DataOutputStream os;
 	Timer t;
-	Timer p;
+	Timer ping;
 	String name;
 	String ip;
+	JFrame f;
+	DisplayPanel p;
+	String gameName;
 	public Client(String name, String ip) {
 		if(name.equals("") || name.equals(null)) {
 			JOptionPane.showMessageDialog(null, "Invalid username");
@@ -39,7 +48,7 @@ public class Client implements ActionListener {
 		}
 		this.name = name;
 		t = new Timer(11, this);
-		p = new Timer(100, this);
+		ping = new Timer(100, this);
 		try {
 			w = new Socket(this.ip,2245);
 			is = new DataInputStream(w.getInputStream());
@@ -52,18 +61,33 @@ public class Client implements ActionListener {
 			t.stop();
 			System.exit(0);
 		}
-		t.start();
-		p.start();
+		ships.add(new BattleShip(2));
+		ships.add(new BattleShip(3));
+		ships.add(new BattleShip(3));
+		ships.add(new BattleShip(4));
+		ships.add(new BattleShip(5));
 		inQueue = true;
-	}
+		f = new JFrame();
+		p = new DisplayPanel();
+		f.setMinimumSize(new Dimension(500,800));
+		f.add(p);
+		p.setMinimumSize(new Dimension(500,800));
+		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		t.start();
+		ping.start();
+}
 	public void quit() {
 		t.stop();
-		JOptionPane.showMessageDialog(null, "Connection Lost");
+		JOptionPane.showMessageDialog(f, "Connection Lost");
 		System.exit(0);
 	}
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if(e.getSource() == p) {
+		p.h = f.getHeight();
+		p.w = f.getWidth();
+		f.repaint();
+		p.repaint();
+		if(e.getSource() == ping) {
 		try {
 			os.writeUTF("$");
 			if(is.available()==-1 || w.isClosed()) {
@@ -77,18 +101,22 @@ public class Client implements ActionListener {
 		try {
 			if(is.available()>0) {
 				String msg = is.readUTF().replaceAll("\\$", "");
-				System.out.print(msg);
 				if(!msg.equals("wait")&&!msg.equals("start")&&msg.contains("The Cur")) {
-				os.writeUTF(JOptionPane.showInputDialog(msg));
+				gameName = JOptionPane.showInputDialog(msg);
+				os.writeUTF(gameName);
 				inQueue = true;
+				f.setTitle("Waiting for players to join: "+gameName);
+				f.setVisible(true);
 				} else if(msg.equals("start")){
 					inQueue = false;
+					f.setTitle("You are currently setting up your ships. Click the button to enter");
 				}
-			} 
+			}
 		} catch (IOException e1) {
 			quit();
 		}
 	}
+		
 		
 	}
 }
