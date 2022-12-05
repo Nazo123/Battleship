@@ -35,7 +35,7 @@ public class Server implements ActionListener {
 	 Font font = new Font("Courier", Font.PLAIN,20);
 
 	
-	Timer t = new Timer(10, this);
+	Timer t = new Timer(50, this);
 	public Server() {
 		f = new JFrame();
 		p = new JPanel();
@@ -130,7 +130,6 @@ public class Server implements ActionListener {
 					
 					if(waiting.get(i).name!=null) {
 					game = waiting.get(i).is.readUTF().replaceAll("\\$", "");
-					game = game.replaceAll("$", "");
 					if(!game.equals("")) {
 					if(queue.get(game) == null) {
 						queue.put(game, waiting.get(i));
@@ -140,8 +139,8 @@ public class Server implements ActionListener {
 						Thread t = new Thread(g);
 						t.start();
 						games.add(new GameHolder(g,t));
-						queue.get(game).os.writeUTF("start");
-						waiting.get(i).os.writeUTF("start");
+						queue.get(game).os.writeUTF("start:"+waiting.get(i).name);
+						waiting.get(i).os.writeUTF("start:"+queue.get(game).name);
 						toRemove.add(waiting.get(i));
 						toRemove.add(queue.get(game));
 					}
@@ -185,6 +184,6 @@ public class Server implements ActionListener {
 		f.pack();		
 	}
 	String makeLabel(String players, String queue, String games) {
-		return "<html>" + "The non-playing  players are: " + players+ "<br>"+"The games in queue are: " + queue+ "<br>"+ "The current active games are: "+games;			
+		return "<html>" + "The players that are not in a game are:" + players+ "<br>"+"The games in queue and these players are: " + queue+ "<br>"+ "The current active games are: "+games;			
 	}
 }

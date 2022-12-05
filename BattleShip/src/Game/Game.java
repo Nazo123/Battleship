@@ -69,7 +69,22 @@ e.printStackTrace();
 		t.stop();
 	}
 	public void actionPerformed(ActionEvent e) {
-		
+			try {
+				if(is1.available()>0) {
+					String w = is1.readUTF().replaceAll("\\$", "");;	
+					if(w.startsWith("msg:")) {
+						os2.writeUTF(w);
+					}
+				}
+				if(is2.available()>0) {
+					String w = is2.readUTF().replaceAll("\\$", "");;	
+					if(w.startsWith("msg:")) {
+						os1.writeUTF(w);
+					}
+				}
+			} catch (IOException e2) {
+				quit();
+			}
 			try {
 				if(e.getSource()==p) {
 				os1.writeUTF("$");

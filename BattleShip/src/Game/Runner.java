@@ -15,7 +15,7 @@ public class Runner {
 		try {
 			JOptionPane.showMessageDialog(null, "Server is being run at this ip: "+InetAddress.getLocalHost().getHostAddress()+" on port 2245");
 		}catch (Exception e) {
-			JOptionPane.showMessageDialog(null, "Unable to retrieve IP");
+			JOptionPane.showMessageDialog(null, "Unable to retrieve local IP");
 			System.exit(0);
 		}
 		Server s = new Server();
