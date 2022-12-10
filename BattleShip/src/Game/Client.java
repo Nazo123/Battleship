@@ -30,6 +30,7 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 	ArrayList<BattleShip> ships = new ArrayList<BattleShip>();
 	boolean inQueue;
 	boolean setUp;
+	boolean waiting;
 	Socket w;
 	DataInputStream is;
 	DataOutputStream os;
@@ -64,7 +65,7 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 			}
 		}
 		this.name = name;
-		t = new Timer(11, this);
+		t = new Timer(10, this);
 		ping = new Timer(100, this);
 		try {
 			w = new Socket(this.ip,2245);
@@ -78,24 +79,24 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 			t.stop();
 			System.exit(0);
 		}
-		ships.add(new BattleShip(2));
-		ships.add(new BattleShip(3));
-		ships.add(new BattleShip(3));
-		ships.add(new BattleShip(4));
-		ships.add(new BattleShip(5));
+		ships.add(new BattleShip(2, "Destroyer"));
+		ships.add(new BattleShip(3, "Cruiser"));
+		ships.add(new BattleShip(3, "Submarine"));
+		ships.add(new BattleShip(4, "Battleship"));
+		ships.add(new BattleShip(5, "Carrier"));
 		inQueue = true;
 		setUp = false;
 		f = new JFrame();
-		p = new DisplayPanel();
-		f.setMinimumSize(new Dimension(600,600));
+		p = new DisplayPanel(ships);
+		f.setMinimumSize(new Dimension(800,620));
 		f.add(p);
-		p.setMinimumSize(new Dimension(600,600));
+		p.setMinimumSize(new Dimension(800,600));
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		chat = new JFrame();
 		chat.setMinimumSize(new Dimension(300,600));
 		chatdis = new JTextArea();
 		chatdis.setMinimumSize(new Dimension(300,500));
-		chatdis.setMaximumSize(new Dimension(300,700));
+		chatdis.setMaximumSize(new Dimension(300,500));
 		chatdis.setSize(new Dimension(300,500));
 		chatdis.setEditable(false);
 		chatdis.setVisible(true);
@@ -127,6 +128,7 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		chat.add(format);
 		chat.setMaximumSize(new Dimension(300,600));
 		send.addActionListener(this);
+		
 		t.start();
 		ping.start();
 }
@@ -199,7 +201,6 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 				String msg = is.readUTF().replaceAll("\\$", "");
 				if(msg.startsWith("msg:")) {
 					chatdis.append("\n "+opponent +" said: "+msg.substring(4) + "\n");
-					s.getVerticalScrollBar().setValue(s.getVerticalScrollBar().getHeight());
 				}
 			}
 		} catch (IOException e1) {
@@ -207,7 +208,18 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		}
 
 	}
-		if(!setUp) {
+		if(setUp) {
+		if(!p.setUp) {
+			setUp = false;
+			waiting = true;
+			f.setTitle("Your ships are setup, waiting for opponent");
+			try {
+				os.writeUTF("Waiting");
+			} catch (IOException e1) {
+				quit();
+			}
+			return;
+		}
 		boolean f = true;
 		for(int i = 0; i < ships.size();i++) {
 		f = ships.get(i).placed;
@@ -260,7 +272,6 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		if(e.getKeyChar()==10 && e.getSource() == text) {
 			if(!text.getText().equals("")) {
 				chatdis.append("\n You said: "+text.getText() + "\n");
-				s.getVerticalScrollBar().setValue(s.getVerticalScrollBar().getHeight());
 				try {
 					os.writeUTF("msg:"+text.getText());
 				} catch (IOException e1) {
@@ -269,13 +280,10 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 				text.setText("");
 				}
 		}
-		System.out.println(e.getExtendedKeyCode());
-		System.out.print(e.getKeyChar() * 1);
 	}
 	@Override
 	public void keyPressed(KeyEvent e) {
 		// TODO Auto-generated method stub
-		
 	}
 	@Override
 	public void keyReleased(KeyEvent e) {
