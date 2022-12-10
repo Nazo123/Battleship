@@ -25,6 +25,8 @@ public class Game implements Runnable, ActionListener{
 	DataInputStream is2;
 	Timer t;
 	Timer p;
+	boolean p1Ready;
+	boolean p2Ready;
 	public Game(Socket p1, Socket p2, String name, String p1name, String p2name) {
 		this.name = name;
 		this.p1 = p1;
@@ -32,6 +34,8 @@ public class Game implements Runnable, ActionListener{
 		this.p1name = p1name;
 		this.p2name = p2name;
 		live = true;
+		p1Ready = false;
+		p2Ready = false;
 		try {
 			os1 = new DataOutputStream(p1.getOutputStream());
 			is1 = new DataInputStream(p1.getInputStream());
@@ -46,11 +50,11 @@ e.printStackTrace();
 	
 	
 	public void run() {
-		t = new Timer(10, this);
-		p = new Timer(100, this);
+		t = new Timer(20, this);
+		p = new Timer(100,this);
 		live = true;
-		p.start();
 		t.start();
+		p.start();
 	}
 	void quit() {
 		live = false;
@@ -69,17 +73,46 @@ e.printStackTrace();
 		t.stop();
 	}
 	public void actionPerformed(ActionEvent e) {
+		if(p1Ready && p2Ready&& e.getSource() == t) {
+			p1Ready = false;
+			p2Ready = false;
+			System.out.println("Gaming");
+			try {
+				os1.writeUTF("Game:");
+				os2.writeUTF("Game:");
+				os1.writeUTF("Turn:");
+				
+			} catch (IOException e1) {
+				quit();
+			}
+		}
 			try {
 				if(is1.available()>0) {
-					String w = is1.readUTF().replaceAll("\\$", "");;	
+					String w = is1.readUTF().replaceAll("\\$", "");
 					if(w.startsWith("msg:")) {
 						os2.writeUTF(w);
+					} else if(w.startsWith("Waiting")) {
+						p1Ready = true;
+						System.out.println("p1 is ready");
+					} else if(w.startsWith("Fire:")) {
+						os2.writeUTF(w);
+					} else if(w.startsWith("Hit")||w.startsWith("Miss")) {
+						os2.writeUTF(w);
+						os1.writeUTF("Turn:");
 					}
 				}
 				if(is2.available()>0) {
-					String w = is2.readUTF().replaceAll("\\$", "");;	
+					String w = is2.readUTF().replaceAll("\\$", "");
 					if(w.startsWith("msg:")) {
 						os1.writeUTF(w);
+					} else if(w.startsWith("Waiting")) {
+						p2Ready = true;
+						System.out.println("p2 is ready");
+					} else if(w.startsWith("Fire:")) {
+						os1.writeUTF(w);
+					} else if(w.startsWith("Hit")||w.startsWith("Miss")) {
+						os1.writeUTF(w);
+						os2.writeUTF("Turn:");
 					}
 				}
 			} catch (IOException e2) {

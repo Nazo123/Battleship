@@ -31,6 +31,8 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 	boolean inQueue;
 	boolean setUp;
 	boolean waiting;
+	boolean inGame;
+	boolean turn;
 	Socket w;
 	DataInputStream is;
 	DataOutputStream os;
@@ -49,8 +51,15 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 	JPanel holder;
 	String gameName;
 	String opponent;
+	ArrayList<String> guesses;
+	ArrayList<String> hits;
+	ArrayList<ArrayList<Tile>> board;
+	String curGuess;
 	public Client(String name, String ip) {
-		if(name.equals("") || name.equals(null)) {
+		board = new ArrayList<ArrayList<Tile>>();
+		guesses = new ArrayList<String>();
+		hits = new ArrayList<String>();
+		if(name.equals("") || name.equals(null) || name.trim().equals("")) {
 			JOptionPane.showMessageDialog(null, "Invalid username");
 			System.exit(0);
 		}
@@ -87,7 +96,7 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		inQueue = true;
 		setUp = false;
 		f = new JFrame();
-		p = new DisplayPanel(ships);
+		p = new DisplayPanel(ships,board,guesses,hits);
 		f.setMinimumSize(new Dimension(800,620));
 		f.add(p);
 		p.setMinimumSize(new Dimension(800,600));
@@ -128,7 +137,8 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		chat.add(format);
 		chat.setMaximumSize(new Dimension(300,600));
 		send.addActionListener(this);
-		
+		inGame = false;
+		turn = false;
 		t.start();
 		ping.start();
 }
@@ -139,6 +149,25 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 	}
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		if(p.fire!=null) {
+		boolean n = true;
+		for(int i =0; i < guesses.size();i++) {
+			if(guesses.get(i).equals(p.fire)) {
+				n = false; 
+				break;
+			}
+		}
+		 if(n) {
+			 try {
+				os.writeUTF("Fire:"+p.fire);
+			} catch (IOException e1) {
+				quit();
+			}
+		 }
+		 guesses.add(p.fire);
+		 curGuess = p.fire;
+		 p.fire = null;
+		}
 		if(e.getSource()==send) {
 			if(!text.getText().equals("")) {
 			chatdis.append("\n You said: "+text.getText() + "\n");
@@ -189,8 +218,8 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 					opponent = msg.substring(6);
 					System.out.println(opponent);
 					chat.setTitle("You vs "+opponent);
-					f.setTitle("You are currently setting up your ships. Click the button to enter");
-				}
+					f.setTitle("You are currently setting up your ships. Click the button to submit position");
+				} 
 			}
 		} catch (IOException e1) {
 			quit();
@@ -201,6 +230,31 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 				String msg = is.readUTF().replaceAll("\\$", "");
 				if(msg.startsWith("msg:")) {
 					chatdis.append("\n "+opponent +" said: "+msg.substring(4) + "\n");
+				} else if(msg.contains("Game:")) {
+					System.out.println("YAYAY");
+					inGame = true;
+					p.inGame = true;
+					f.setTitle("The match has started, when it is your turn click to fire and guess");
+				} else if(msg.contains("Turn:")) {
+					turn = true;
+					p.turn = true;
+					f.setTitle("Game started, your turn");
+				} else if(msg.startsWith("Fire:")) {
+					int xTile = Integer.parseInt(msg.substring(5, 6));
+					int yTile = Integer.parseInt(msg.substring(7));
+					board.get(xTile).get(yTile).hit = true;
+					if(board.get(xTile).get(yTile).containsShip) {
+					os.writeUTF("Hit");
+					} else {
+					os.writeUTF("Miss");
+					}
+				} else if(msg.startsWith("Hit")) {
+					hits.add(curGuess);
+					turn = false;
+					p.turn = false;
+				} else if(msg.startsWith("Miss")) {
+					turn = false;
+					p.turn = false;
 				}
 			}
 		} catch (IOException e1) {
@@ -212,7 +266,7 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		if(!p.setUp) {
 			setUp = false;
 			waiting = true;
-			f.setTitle("Your ships are setup, waiting for opponent");
+			f.setTitle("Your ships are setup, waiting for opponent to ready");
 			try {
 				os.writeUTF("Waiting");
 			} catch (IOException e1) {
