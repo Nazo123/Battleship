@@ -27,7 +27,7 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.Timer;
 
 public class Client implements ActionListener, WindowListener, KeyListener {
-	ArrayList<BattleShip> ships = new ArrayList<BattleShip>();
+	ArrayList<BattleShip> ships;
 	boolean inQueue;
 	boolean setUp;
 	boolean waiting;
@@ -54,12 +54,18 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 	ArrayList<String> guesses;
 	ArrayList<String> hits;
 	ArrayList<ArrayList<Tile>> board;
+	ArrayList<BattleShip> sunk;
 	String curGuess;
+	boolean lose = false;
+	boolean win = false;
+	boolean opQuit = false;
 	public Client(String name, String ip) {
+		ships = new ArrayList<BattleShip>();
+		sunk = new ArrayList<BattleShip>();
 		board = new ArrayList<ArrayList<Tile>>();
 		guesses = new ArrayList<String>();
 		hits = new ArrayList<String>();
-		if(name.equals("") || name.equals(null) || name.trim().equals("")) {
+		if(name.equals("") || name.equals(""+null) || name.trim().equals("")) {
 			JOptionPane.showMessageDialog(null, "Invalid username");
 			System.exit(0);
 		}
@@ -88,15 +94,15 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 			t.stop();
 			System.exit(0);
 		}
-		ships.add(new BattleShip(2, "Destroyer"));
-		ships.add(new BattleShip(3, "Cruiser"));
-		ships.add(new BattleShip(3, "Submarine"));
-		ships.add(new BattleShip(4, "Battleship"));
-		ships.add(new BattleShip(5, "Carrier"));
+		ships.add(new BattleShip("Destroyer"));
+		ships.add(new BattleShip("Cruiser"));
+		ships.add(new BattleShip("Submarine"));
+		ships.add(new BattleShip("Battleship"));
+		ships.add(new BattleShip("Carrier"));
 		inQueue = true;
 		setUp = false;
 		f = new JFrame();
-		p = new DisplayPanel(ships,board,guesses,hits);
+		p = new DisplayPanel(ships,board,guesses,hits,sunk);
 		f.setMinimumSize(new Dimension(800,620));
 		f.add(p);
 		p.setMinimumSize(new Dimension(800,600));
@@ -143,10 +149,18 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		ping.start();
 }
 	public void quit() {
+		if(!opQuit) {
 		t.stop();
-		JOptionPane.showMessageDialog(f, "Connection Lost");
-		System.exit(0);
+		if(win||lose) {
+			JOptionPane.showMessageDialog(f, "The opponent quit, chat will no longer work. To replay quit and re-run the program");
+			opQuit = true;
+		} else {
+			JOptionPane.showMessageDialog(f, "Connection Lost");
+			System.exit(0);
+		}
+		}
 	}
+		
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if(p.fire!=null) {
@@ -163,9 +177,12 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 			} catch (IOException e1) {
 				quit();
 			}
-		 }
 		 guesses.add(p.fire);
 		 curGuess = p.fire;
+		 turn = false;
+		 p.turn = false;
+		 f.setTitle("Game started, "+opponent+"'s turn");
+		 }
 		 p.fire = null;
 		}
 		if(e.getSource()==send) {
@@ -185,10 +202,12 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 			chat.setSize(new Dimension(300,600));
 			chat.setVisible(p.chat);
 		}
+		if(!win&&!lose) {
 		p.h = f.getHeight();
 		p.w = f.getWidth();
 		f.repaint();
 		p.repaint();
+		}
 		if(e.getSource() == ping) {
 		try {
 			os.writeUTF("$");
@@ -216,7 +235,6 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 					p.setUp = true;
 					setUp = true;
 					opponent = msg.substring(6);
-					System.out.println(opponent);
 					chat.setTitle("You vs "+opponent);
 					f.setTitle("You are currently setting up your ships. Click the button to submit position");
 				} 
@@ -231,7 +249,6 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 				if(msg.startsWith("msg:")) {
 					chatdis.append("\n "+opponent +" said: "+msg.substring(4) + "\n");
 				} else if(msg.contains("Game:")) {
-					System.out.println("YAYAY");
 					inGame = true;
 					p.inGame = true;
 					f.setTitle("The match has started, when it is your turn click to fire and guess");
@@ -244,17 +261,66 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 					int yTile = Integer.parseInt(msg.substring(7));
 					board.get(xTile).get(yTile).hit = true;
 					if(board.get(xTile).get(yTile).containsShip) {
-					os.writeUTF("Hit");
+					os.writeUTF("Hit:" + board.get(xTile).get(yTile).ship.type);
+					BattleShip s = board.get(xTile).get(yTile).ship;
+					xTile = (s.x-10)/50;
+					yTile = (s.y-10)/50;
+					boolean sunk = true;
+					if(s.horizontal) {
+					for(int i = 0; i < s.length;i++) {
+						if(!board.get(xTile+i).get(yTile).hit) {
+							sunk = false;
+							break;
+						}
+					}
+					} else {
+						for(int i = 0; i < s.length;i++) {
+							if(!board.get(xTile).get(yTile+i).hit) {
+								sunk = false;
+								break;
+							}
+						}
+					}
+					if(sunk) {
+					os.writeUTF("Sunk:"+(s.horizontal ? "hor":"ver")+((int)Math.floor((s.x-10)/50))+","+((int)Math.floor((s.y-10)/50))+s.type);
+					s.dead = true;
+					}
+					boolean gg = true;
+					for(int i = 0; i < ships.size(); i++) {
+						if(!ships.get(i).dead) {
+							gg = false;
+							break;
+						}
+					}
+					if(gg) {
+						os.writeUTF("GG:");
+						lose = true;
+						JOptionPane.showMessageDialog(f, "You lose! You were defeated by: "+opponent+". Chat will keep working till a player quits. If you want to play again, quit out and re-run the game!");
+						f.setTitle("Sadly you lost!");
+					}
 					} else {
 					os.writeUTF("Miss");
 					}
-				} else if(msg.startsWith("Hit")) {
-					hits.add(curGuess);
-					turn = false;
-					p.turn = false;
+				} else if(msg.startsWith("Hit:")) {
+					hits.add(curGuess+msg.substring(4));
 				} else if(msg.startsWith("Miss")) {
-					turn = false;
-					p.turn = false;
+					
+				} else if(msg.startsWith("Sunk:")) {
+					BattleShip b = new BattleShip(msg.substring(11));
+					if(msg.substring(5,8).equals("hor")) {
+						b.horizontal = true;
+					} else {
+						b.horizontal = false;
+					}
+					int xTile = Integer.parseInt(msg.substring(8,9));
+					int yTile = Integer.parseInt(msg.substring(10,11));
+					b.x = 50*xTile + 10;
+					b.y = 50*yTile + 10;
+					sunk.add(b);
+				} else if (msg.startsWith("GG:")) {
+					win = true;
+					JOptionPane.showMessageDialog(f, "You win! You defeated: "+ opponent+ ". Chat will keep working till a player quits. If you want to play again, quit out and re-run the game!");
+					f.setTitle("Great job you won!");
 				}
 			}
 		} catch (IOException e1) {
@@ -283,6 +349,10 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 		} 
 		p.ready = f;
 		}
+		
+	if(win||lose) {
+		 f.setTitle((win ? "Great job you won!":"Sadly you lost!"));
+	}
 		
 	}
 	@Override

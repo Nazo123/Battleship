@@ -27,6 +27,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 	public float h = 600;
 	public float w = 800;
 	ArrayList<BattleShip> ships;
+	ArrayList<BattleShip> sunk;
 	ArrayList<ArrayList<Tile>> board;
 	ArrayList<String> guesses;
 	ArrayList<String> hits;
@@ -34,9 +35,10 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 	Font f;
 	Font f2;
 	String fire;
-	public DisplayPanel(ArrayList<BattleShip> ships, ArrayList<ArrayList<Tile>> board, ArrayList<String> guesses, ArrayList<String> hits) {
+	public DisplayPanel(ArrayList<BattleShip> ships, ArrayList<ArrayList<Tile>> board, ArrayList<String> guesses, ArrayList<String> hits, ArrayList<BattleShip> sunk) {
 		fire = null;
 		setBackground(new Color(174, 175, 176));
+		this.sunk = sunk;
 		this.ships = ships;
 		this.board = board;
 		this.guesses = guesses;
@@ -53,7 +55,6 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 		f = new Font("Courier", Font.PLAIN,15);
 		f2 = new Font("Courier", Font.PLAIN,50);
 	}
-
 	public void paint(Graphics g) {
 		Point p = MouseInfo.getPointerInfo().getLocation();
 		SwingUtilities.convertPointFromScreen(p,this);
@@ -72,40 +73,46 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 		g.setColor(Color.black);
 			for(int i = 0; i < board.size(); i++) {
 			for(int j = 0; j < board.get(i).size(); j++) {
-			if(inGame && turn) {
-			if( p.x > (int)((10+i*50)*ratio) && p.x < (int)((10+(i+1)*50)*ratio) && p.y > (int)((10+j*50)*ratio) && p.y < (int)((10+(j+1)*50)*ratio)) {
-				boolean draw = true;
-				for(int m = 0; m < guesses.size();m++) {
-					if(i==Integer.parseInt(guesses.get(m).substring(0,1))&& j==Integer.parseInt(guesses.get(m).substring(2))) {
-						draw = false;
-							break;
-				}
-				}
-				if(draw) {
-				for(int m = 0; m < hits.size();m++) {
-					if(i==Integer.parseInt(hits.get(m).substring(0,1)) && j==Integer.parseInt(hits.get(m).substring(2))) {
-						draw = false;
-						break;
-				}
-				}
-				}
-				if(draw) {
-				g.setColor(Color.GRAY);
-				g.fillOval((int)((25+i*50)*ratio),((int)((25+j*50)*ratio)),(int)(20*ratio),(int)(20*ratio));
-				g.setColor(Color.black);
-				}
-			}
-			}
+			
 			g.setColor(Color.gray);
 			g.drawRect((int)((10+i*50)*ratio),((int)((10+j*50)*ratio)),(int)(50*ratio),(int)(50*ratio));
 			}
+			if(turn) {
+				int xTile = (int)(p.x/ratio-10)/50;
+				int yTile = (int)(p.y/ratio-10)/50;
+				if(xTile > -1 && xTile < 10 && yTile > -1 && yTile < 10) {	
+					boolean draw = true;
+					
+					for(int m = 0; m < guesses.size();m++) {
+						if((xTile+","+yTile).contentEquals(guesses.get(m))) {
+							draw = false;
+							break;
+					}
+					}
+					if(draw) {
+					for(int m = 0; m < hits.size();m++) {
+						if((xTile+","+yTile).contentEquals(guesses.get(m))) {
+							draw = false;
+							break;
+					}
+					}
+					}
+					if(draw) {
+					g.setColor(Color.GRAY);
+					g.fillOval((int)((25+xTile*50)*ratio),((int)((25+yTile*50)*ratio)),(int)(20*ratio),(int)(20*ratio));
+					g.setColor(Color.black);
+					}
+				}
+				}
 		}
 		
 		if(inGame) {
 			g.setFont(f2);
 			if(turn) {
+				g.setColor(Color.black);
 				g.drawString("Your turn", (int)(100*ratio),(int)(550*ratio));
 			} else {
+				g.setColor(Color.gray);
 				g.drawString("Opponent's turn", (int)(100*ratio),(int)(550*ratio));
 			}
 			g.setColor(Color.blue);
@@ -128,18 +135,33 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 					g.drawRect((int)(ratio*((ships.get(i).x-10)/50*20 + 540)),(int)(ratio*((ships.get(i).y-10)/50*20+50)),(int)(20*ratio),(int)(ships.get(i).length*20*ratio));
 				}
 			}
-			
+			for(int i = 0; i < sunk.size();i++) {
+				g.setColor(Color.gray);
+				if(sunk.get(i).horizontal) {
+					g.fillRect((int)(ratio*sunk.get(i).x),(int)(ratio*sunk.get(i).y),(int)(sunk.get(i).length*50*ratio),(int)(50*ratio));
+					g.setColor(Color.black);
+					g.drawRect((int)(ratio*sunk.get(i).x),(int)(ratio*sunk.get(i).y),(int)(sunk.get(i).length*50*ratio),(int)(50*ratio));
+				} else {
+					g.fillRect((int)(ratio*sunk.get(i).x),(int)(ratio*sunk.get(i).y),(int)(50*ratio),(int)(sunk.get(i).length*50*ratio));
+					g.setColor(Color.black);
+					g.drawRect((int)(ratio*sunk.get(i).x),(int)(ratio*sunk.get(i).y),(int)(50*ratio),(int)(sunk.get(i).length*50*ratio));
+				}
+			}
+
 			  //Found this on Stackoverflow
 			  Graphics2D g2 = (Graphics2D) g;
 			  g2.setStroke(new BasicStroke(2));
 		
 			  
-			  g2.setColor(Color.red);
 			for(int i = 0; i < board.size(); i++) {
 				for(int j = 0; j < board.get(i).size(); j++) {
 					if(board.get(i).get(j).hit) {
-					g2.drawLine((int)(ratio*(540+i*20)),(int)(ratio*(50+j*20)),(int)(ratio*(540+(i+1)*20)),(int)(ratio*(50+(j+1)*20)));
-					g2.drawLine((int)(ratio*(540+(i+1)*20)),(int)(ratio*(50+j*20)),(int)(ratio*(540+i*20)),(int)(ratio*(50+(j+1)*20)));
+						g.setColor(Color.gray);
+					if(board.get(i).get(j).containsShip) {
+						g.setColor(Color.red);
+					}
+					g2.drawLine((int)(ratio*(545+i*20)),(int)(ratio*(55+j*20)),(int)(ratio*(535+(i+1)*20)),(int)(ratio*(45+(j+1)*20)));
+					g2.drawLine((int)(ratio*(535+(i+1)*20)),(int)(ratio*(55+j*20)),(int)(ratio*(545+i*20)),(int)(ratio*(45+(j+1)*20)));
 
 					}
 				}
@@ -148,17 +170,16 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 			g2.setColor(Color.gray);
 			for(int i = 0; i < guesses.size();i++) {
 				int xTile = Integer.parseInt(guesses.get(i).substring(0,1));
-				int yTile = Integer.parseInt(guesses.get(i).substring(2));
-				g2.drawLine((int)(ratio*(xTile*50+10)), (int)(ratio*(yTile*50+10)), (int)(ratio*((xTile+1)*50+10)), (int)(ratio*((yTile+1)*50+10)));
-				g2.drawLine((int)(ratio*((xTile+1)*50+10)), (int)(ratio*(yTile*50+10)), (int)(ratio*(xTile*50+10)), (int)(ratio*((yTile+1)*50+10)));
+				int yTile = Integer.parseInt(guesses.get(i).substring(2,3));
+				g2.drawLine((int)(ratio*(xTile*50+22.5)), (int)(ratio*(yTile*50+22.5)), (int)(ratio*((xTile+1)*50-2.5)), (int)(ratio*((yTile+1)*50-2.5)));
+				g2.drawLine((int)(ratio*((xTile+1)*50-2.5)), (int)(ratio*(yTile*50+22.5)), (int)(ratio*(xTile*50+22.5)), (int)(ratio*((yTile+1)*50-2.5)));
 			}
 			g2.setColor(Color.red);
 			for(int i = 0; i < hits.size();i++) {
 				int xTile = Integer.parseInt(hits.get(i).substring(0,1));
-				int yTile = Integer.parseInt(hits.get(i).substring(2));
-				g2.drawLine((int)(ratio*(xTile*50+10)), (int)(ratio*(yTile*50+10)), (int)(ratio*((xTile+1)*50+10)), (int)(ratio*((yTile+1)*50+10)));
-				g2.drawLine((int)(ratio*((xTile+1)*50+10)), (int)(ratio*(yTile*50+10)), (int)(ratio*(xTile*50+10)), (int)(ratio*((yTile+1)*50+10)));
-		
+				int yTile = Integer.parseInt(hits.get(i).substring(2,3));
+				g2.drawLine((int)(ratio*(xTile*50+22.5)), (int)(ratio*(yTile*50+22.5)), (int)(ratio*((xTile+1)*50-2.5)), (int)(ratio*((yTile+1)*50-2.5)));
+				g2.drawLine((int)(ratio*((xTile+1)*50-2.5)), (int)(ratio*(yTile*50+22.5)), (int)(ratio*(xTile*50+22.5)), (int)(ratio*((yTile+1)*50-2.5)));
 			}
 		}
 		if(!inQueue) {
@@ -225,7 +246,6 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 			int yTile = ((int)Math.floor((e.getY()/ratio-10)/50));
 			if(xTile>-1&&xTile<10&&yTile>-1&&yTile<10) {
 			fire = xTile+","+yTile;
-			System.out.println(fire);
 			}
 		}
 		if(!inQueue&&e.getX() > 10*ratio && e.getX() < 80*ratio && e.getY() > 520*ratio && e.getY() < 550*ratio) {
@@ -241,6 +261,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 					if(ships.get(i).placed) {
 						for(int j = 0; j < ships.get(i).length;j++) {
 							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).containsShip = false;
+							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).ship = null;
 						}
 					}
 				}
@@ -251,6 +272,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 						if(ships.get(i).placed) {
 							for(int j = 0; j < ships.get(i).length;j++) {
 								board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).containsShip = false;
+								board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).ship = null;
 							}
 						}
 					}
@@ -285,6 +307,7 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 						ships.get(i).placed = true;
 						for(int j = 0; j < ships.get(i).length;j++) {
 							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).containsShip = true;
+							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).ship = ships.get(i);
 						}
 					}
 					ships.get(i).held = false;
@@ -293,10 +316,12 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 					if(ships.get(i).horizontal) {
 						for(int j = 0; j < ships.get(i).length;j++) {
 							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).containsShip = true;
+							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).ship = ships.get(i);
 						}
 					} else {
 						for(int j = 0; j < ships.get(i).length;j++) {
 						board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).containsShip = true;
+						board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).ship = ships.get(i);
 						}
 					}
 					}
@@ -323,6 +348,8 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 						ships.get(i).placed = true;
 						for(int j = 0; j < ships.get(i).length;j++) {
 							board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).containsShip = true;
+							board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).ship = ships.get(i);
+
 						}
 					}
 					ships.get(i).horizontal = ships.get(i).wasHorizontal;
@@ -331,10 +358,12 @@ public class DisplayPanel extends JPanel implements MouseListener, KeyListener{
 					if(ships.get(i).horizontal) {
 						for(int j = 0; j < ships.get(i).length;j++) {
 							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).containsShip = true;
+							board.get((int)Math.floor((ships.get(i).x-10)/50)+j).get((int)Math.floor((ships.get(i).y-10)/50)).ship = ships.get(i);
 						}
 					} else {
 						for(int j = 0; j < ships.get(i).length;j++) {
 						board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).containsShip = true;
+						board.get((int)Math.floor((ships.get(i).x-10)/50)).get((int)Math.floor((ships.get(i).y-10)/50)+j).ship = ships.get(i);
 						}
 						}
 					}

@@ -76,7 +76,6 @@ e.printStackTrace();
 		if(p1Ready && p2Ready&& e.getSource() == t) {
 			p1Ready = false;
 			p2Ready = false;
-			System.out.println("Gaming");
 			try {
 				os1.writeUTF("Game:");
 				os2.writeUTF("Game:");
@@ -93,12 +92,15 @@ e.printStackTrace();
 						os2.writeUTF(w);
 					} else if(w.startsWith("Waiting")) {
 						p1Ready = true;
-						System.out.println("p1 is ready");
 					} else if(w.startsWith("Fire:")) {
 						os2.writeUTF(w);
 					} else if(w.startsWith("Hit")||w.startsWith("Miss")) {
 						os2.writeUTF(w);
 						os1.writeUTF("Turn:");
+					} else if(w.startsWith("Sunk:")) {
+						os2.writeUTF(w);
+					} else if(w.startsWith("GG")) {
+						os2.writeUTF(w);
 					}
 				}
 				if(is2.available()>0) {
@@ -107,12 +109,15 @@ e.printStackTrace();
 						os1.writeUTF(w);
 					} else if(w.startsWith("Waiting")) {
 						p2Ready = true;
-						System.out.println("p2 is ready");
 					} else if(w.startsWith("Fire:")) {
 						os1.writeUTF(w);
 					} else if(w.startsWith("Hit")||w.startsWith("Miss")) {
 						os1.writeUTF(w);
 						os2.writeUTF("Turn:");
+					} else if(w.startsWith("Sunk:")) {
+						os1.writeUTF(w);
+					} else if(w.startsWith("GG")) {
+						os1.writeUTF(w);
 					}
 				}
 			} catch (IOException e2) {
