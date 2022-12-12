@@ -69,7 +69,7 @@ public class Client implements ActionListener, WindowListener, KeyListener {
 			JOptionPane.showMessageDialog(null, "Invalid username");
 			System.exit(0);
 		}
-		if(ip.equals("")) {
+		if(!ip.equals("")) {
 			this.ip = ip;
 		} else {
 			try {
