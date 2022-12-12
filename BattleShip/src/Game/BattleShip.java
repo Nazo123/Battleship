@@ -5,7 +5,7 @@ public class BattleShip {
 	public boolean wasHorizontal = true;
 	boolean held = false;
 	public String type;
-	public int length;
+	public int length; 
 	public boolean placed = false;
 	public boolean dead = false;
 	public int x = -1;
